@@ -61,6 +61,16 @@ export async function updateSlackStatus(emoji, text) {
  * Extend this map as needed for your mood set.
  */
 function emojiToSlackCode(emoji) {
+  // Handle flag emojis dynamically (e.g. 🇧🇷 → :flag-br:)
+  const flagMatch = emoji.match(/[\u{1F1E0}-\u{1F1FF}]{2}/u);
+  if (flagMatch) {
+    const flag = flagMatch[0];
+    const code = [...flag]
+      .map(c => String.fromCharCode(c.codePointAt(0) - 0x1F1E6 + 97))
+      .join("");
+    return emoji.replace(flag, `:flag-${code}:`);
+  }
+
   const map = {
     "🎉": ":tada:",
     "😊": ":slightly_smiling_face:",
@@ -70,6 +80,13 @@ function emojiToSlackCode(emoji) {
     "😌": ":relieved:",
     "🔥": ":fire:",
     "💤": ":zzz:",
+    "🥳": ":partying_face:",
+    "😍": ":heart_eyes:",
+    "🤔": ":thinking_face:",
+    "😎": ":sunglasses:",
+    "🌊": ":ocean:",
+    "⚡": ":zap:",
+    "💔": ":broken_heart:",
   };
   return map[emoji] || ":musical_note:";
 }

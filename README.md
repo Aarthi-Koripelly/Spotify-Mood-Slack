@@ -84,3 +84,13 @@ If the Claude API call fails for any reason, the app falls back gracefully to `ð
 - Spotify OAuth must be completed once via `npm run auth` before running the app
 - Slack status expires after 1 hour automatically (configurable in `slack.js`)
 - The `/trigger` endpoint is a GET for easy browser/curl demos; in production this would be a POST with webhook signature verification
+
+## Live Deployment
+
+Trigger endpoint: `https://spotify-mood-slack-production.up.railway.app/trigger`
+Status endpoint: `https://spotify-mood-slack-production.up.railway.app/status`
+
+To trigger remotely:
+```bash
+curl https://spotify-mood-slack-production.up.railway.app/trigger
+```

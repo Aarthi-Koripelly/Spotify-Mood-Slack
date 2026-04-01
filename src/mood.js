@@ -2,8 +2,7 @@ import fetch from "node-fetch";
 
 /**
  * Infers mood from track metadata using the Anthropic API.
- * Since Spotify's Audio Features endpoint is deprecated for new apps,
- * we send the track names + artists to Claude and ask it to infer mood.
+ * Returns a mood emoji, country flag, and short mood label.
  *
  * @param {Array} tracks - Array of { name, artist, album } objects
  * @returns {{ emoji: string, text: string }}
@@ -17,19 +16,34 @@ export async function inferMood(tracks) {
     .map((t, i) => `${i + 1}. "${t.name}" by ${t.artist}`)
     .join("\n");
 
-  const prompt = `Based on these recently played songs, infer the listener's current mood.
+  const prompt = `Based on these recently played songs, infer the listener's current mood and identify the country/origin of the music.
 
 ${trackList}
 
 Reply with ONLY a JSON object in this exact format, no other text:
-{"emoji": "<single emoji>", "text": "<2-4 word mood description>"}
+{
+  "emoji": "<mood emoji> <country flag emoji>",
+  "text": "<2-4 word mood description>"
+}
 
-Choose the emoji and text to reflect the overall vibe of the songs. Examples:
-{"emoji": "🎉", "text": "Feeling pumped"}
-{"emoji": "😌", "text": "Feeling chill"}
-{"emoji": "😔", "text": "Feeling introspective"}
-{"emoji": "😤", "text": "In intense focus"}
-{"emoji": "🎵", "text": "Just vibing"}`;
+For the emoji field, combine a mood emoji AND a country flag, e.g. "🎉🇧🇷" or "😌🇯🇵".
+
+Mood emoji examples:
+🎉 pumped/euphoric
+😌 chill/relaxed
+😔 melancholic/sad
+😤 intense/focused
+🥳 celebratory/party
+😍 romantic/loving
+🤔 thoughtful/cerebral
+😎 cool/confident
+🌊 dreamy/floaty
+⚡ energetic/electric
+🔥 aggressive/hype
+💔 heartbroken
+
+Country flag: use the flag of the country most associated with the genre or artist origin.
+If tracks are from multiple countries, use the dominant one.`;
 
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -48,7 +62,6 @@ Choose the emoji and text to reflect the overall vibe of the songs. Examples:
   if (!res.ok) {
     const body = await res.text();
     console.error(`Anthropic API error: ${res.status} — ${body}`);
-    // Fallback mood if Claude call fails
     return { emoji: "🎵", text: "Just vibing" };
   }
 
