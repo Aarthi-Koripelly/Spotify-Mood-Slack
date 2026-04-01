@@ -66,7 +66,7 @@ If tracks are from multiple countries, use the dominant one.`;
   }
 
   const data = await res.json();
-  const text = data.content?.[0]?.text?.trim();
+  const text = data.content?.[0]?.text?.trim().replace(/```json|```/g, "").trim();
 
   try {
     const mood = JSON.parse(text);
