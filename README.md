@@ -1,12 +1,13 @@
 # 🎵 Spotify Mood → Slack Status
 
-Reads your recent Spotify listening history, infers your current mood using Claude (Anthropic), and automatically updates your Slack status with a matching emoji and message.
+Reads your recent Spotify listening history, infers your current mood using Claude (Anthropic), automatically updates your Slack status, and sends you a DM with your recent tracks.
 
 ## What It Does
 
 1. Fetches your last 5 tracks from the Spotify API
 2. Sends the track names + artists to Claude (Haiku) to infer your current mood
 3. Updates your Slack user status with a mood emoji + text (e.g. 🎉 "Feeling pumped"), expires after 1 hour
+4. Sends you a Slack DM with the inferred mood and the list of recent tracks
 
 ## Endpoints
 
@@ -21,8 +22,8 @@ Reads your recent Spotify listening history, infers your current mood using Clau
 ### 1. Prerequisites
 - Node.js 18+
 - A [Spotify Developer app](https://developer.spotify.com/dashboard) (free)
-- A [Slack app](https://api.slack.com/apps) with `users.profile:write` scope (free)
-- An [Anthropic API key](https://console.anthropic.com) (free tier available)
+- A [Slack app](https://api.slack.com/apps) with `users.profile:write` and `chat:write` scopes (free)
+- An [Anthropic API key](https://console.anthropic.com)
 
 ### 2. Install dependencies
 ```bash
@@ -36,6 +37,7 @@ cp .env.example .env
 Fill in:
 - `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` — from your Spotify app dashboard
 - `SLACK_USER_TOKEN` — the **User OAuth Token** (starts with `xoxp-`), not the Bot token
+- `SLACK_USER_ID` — your Slack member ID (click your profile → three dots → Copy member ID, looks like `U0XXXXXXXXX`)
 - `ANTHROPIC_API_KEY` — from [console.anthropic.com](https://console.anthropic.com)
 
 ### 4. Authorize Spotify (one-time)
@@ -52,7 +54,7 @@ Server starts on `http://localhost:3000`. Test it:
 ```bash
 curl http://localhost:3000/trigger
 ```
-Check Slack — your status should update immediately.
+Check Slack — your status should update and you should receive a DM with your recent tracks.
 
 ## Deployment (Railway)
 
@@ -63,7 +65,7 @@ Check Slack — your status should update immediately.
 
 ## How Mood Inference Works
 
-Since Spotify's Audio Features endpoint is deprecated for new apps, mood is inferred by sending the track names and artists to Claude (Haiku). Claude returns a JSON object with an emoji and a short mood label:
+Mood is inferred by sending the track names and artists to Claude (Haiku). Claude returns a JSON object with an emoji and a short mood label:
 ```json
 {"emoji": "🎉", "text": "Feeling pumped"}
 ```
@@ -75,6 +77,7 @@ If the Claude API call fails for any reason, the app falls back gracefully to `�
 - **Spotify token expired** — automatically refreshes before every pipeline run
 - **Spotify rate limit (429)** — returns 502 with the `Retry-After` value
 - **Slack API error** — returns 502 with the Slack error code (e.g. `token_revoked`)
+- **Slack DM error** — logged but does not crash the pipeline; status update still succeeds
 - **Claude API failure** — falls back to a default mood, pipeline continues
 - **Missing env vars** — throws descriptive errors pointing to the missing variable
 
@@ -83,6 +86,7 @@ If the Claude API call fails for any reason, the app falls back gracefully to `�
 - Uses the last 5 tracks to give Claude enough context for a reasonable mood inference
 - Spotify OAuth must be completed once via `npm run auth` before running the app
 - Slack status expires after 1 hour automatically (configurable in `slack.js`)
+- `SLACK_USER_ID` must be set for the DM feature to work; if missing, DM is silently skipped
 - The `/trigger` endpoint is a GET for easy browser/curl demos; in production this would be a POST with webhook signature verification
 
 ## Live Deployment
