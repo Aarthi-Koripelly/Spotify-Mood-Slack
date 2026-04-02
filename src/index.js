@@ -18,11 +18,11 @@ async function runPipeline() {
   // 3. Extract metadata (name, artist, album)
   const metadata = getTrackMetadata(tracks);
 
-  // 4. Infer mood via Claude
+  // 4. Infer mood via Claude (was missing await)
   const mood = await inferMood(metadata);
 
-  // 5. Update Slack status
-  await updateSlackStatus(mood.emoji, mood.text);
+  // 5. Update Slack status + send DM with tracks
+  await updateSlackStatus(mood.emoji, mood.text, metadata);
 
   // 6. Store result
   lastRun = {
