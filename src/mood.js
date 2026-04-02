@@ -2,7 +2,6 @@ import fetch from "node-fetch";
 
 /**
  * Infers mood from track metadata using the Anthropic API.
- * Returns a mood emoji, country flag, and short mood label.
  *
  * @param {Array} tracks - Array of { name, artist, album } objects
  * @returns {{ emoji: string, text: string }}
@@ -16,17 +15,12 @@ export async function inferMood(tracks) {
     .map((t, i) => `${i + 1}. "${t.name}" by ${t.artist}`)
     .join("\n");
 
-  const prompt = `Based on these recently played songs, infer the listener's current mood and identify the country/origin of the music.
+  const prompt = `Based on these recently played songs, infer the listener's current mood.
 
 ${trackList}
 
 Reply with ONLY a JSON object in this exact format, no other text:
-{
-  "emoji": "<mood emoji> <country flag emoji>",
-  "text": "<2-4 word mood description>"
-}
-
-For the emoji field, combine a mood emoji AND a country flag, e.g. "🎉🇧🇷" or "😌🇯🇵".
+{"emoji": "<single mood emoji>", "text": "<2-4 word mood description>"}
 
 Mood emoji examples:
 🎉 pumped/euphoric
@@ -41,9 +35,7 @@ Mood emoji examples:
 ⚡ energetic/electric
 🔥 aggressive/hype
 💔 heartbroken
-
-Country flag: use the flag of the country most associated with the genre or artist origin.
-If tracks are from multiple countries, use the dominant one.`;
+🎵 neutral/vibing`;
 
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
