@@ -1,12 +1,6 @@
 import fetch from "node-fetch";
 
-/**
- * Infers mood from track metadata using the Anthropic API.
- *
- * @param {Array} tracks - Array of { name, artist, album } objects
- * @returns {{ emoji: string, text: string }}
- */
-export async function inferMood(tracks) {
+export async function inferMood(tracks, anthropicKey) {
   if (!tracks || tracks.length === 0) {
     return { emoji: "🎵", text: "Listening to music" };
   }
@@ -41,7 +35,7 @@ Mood emoji examples:
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": process.env.ANTHROPIC_API_KEY,
+      "x-api-key": anthropicKey,
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
@@ -52,8 +46,7 @@ Mood emoji examples:
   });
 
   if (!res.ok) {
-    const body = await res.text();
-    console.error(`Anthropic API error: ${res.status} — ${body}`);
+    console.error(`[Mood] Anthropic API error: ${res.status}`);
     return { emoji: "🎵", text: "Just vibing" };
   }
 

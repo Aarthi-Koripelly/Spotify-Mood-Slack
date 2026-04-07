@@ -1,19 +1,12 @@
 import fetch from "node-fetch";
-import * as dotenv from "dotenv";
-dotenv.config();
 
-let accessToken = process.env.SPOTIFY_ACCESS_TOKEN;
-const refreshToken = process.env.SPOTIFY_REFRESH_TOKEN;
-const clientId = process.env.SPOTIFY_CLIENT_ID;
-const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+let accessToken = null;
 
-export async function refreshAccessToken() {
-  if (!refreshToken || !clientId || !clientSecret) {
-    throw new Error(
-      "Missing Spotify credentials. Check SPOTIFY_REFRESH_TOKEN, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET in .env"
-    );
-  }
-
+/**
+ * Refreshes the Spotify access token.
+ * Accepts credentials as arguments so they can come from the UI or env.
+ */
+export async function refreshAccessToken(clientId, clientSecret, refreshToken, onNewToken) {
   const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
 
   const res = await fetch("https://accounts.spotify.com/api/token", {
@@ -35,16 +28,20 @@ export async function refreshAccessToken() {
 
   const data = await res.json();
   accessToken = data.access_token;
+  if (onNewToken) onNewToken(accessToken);
   console.log("[Spotify] Access token refreshed.");
 }
 
-export async function getRecentTracks(limit = 5) {
+/**
+ * Fetches recently played tracks using the provided access token.
+ */
+export async function getRecentTracks(token, limit = 5) {
   const res = await fetch(
     `https://api.spotify.com/v1/me/player/recently-played?limit=${limit}`,
-    { headers: { Authorization: `Bearer ${accessToken}` } }
+    { headers: { Authorization: `Bearer ${token}` } }
   );
 
-  if (res.status === 401) throw new Error("Spotify token is invalid or expired. Try refreshing.");
+  if (res.status === 401) throw new Error("Spotify token invalid or expired.");
   if (res.status === 429) {
     const retryAfter = res.headers.get("Retry-After") || "unknown";
     throw new Error(`Spotify rate limit hit. Retry after ${retryAfter}s.`);
@@ -56,15 +53,14 @@ export async function getRecentTracks(limit = 5) {
 
   const data = await res.json();
   const items = data.items || [];
-  if (items.length === 0) throw new Error("No recent tracks found. Listen to something on Spotify first.");
+  if (items.length === 0) throw new Error("No recent tracks found on Spotify.");
 
   console.log(`[Spotify] Fetched ${items.length} recent tracks.`);
   return items;
 }
 
 /**
- * Extracts track name, artist, and album from recently played items.
- * Replaces the deprecated Audio Features endpoint.
+ * Extracts track name, artist, album from recently played items.
  */
 export function getTrackMetadata(recentTracks) {
   return recentTracks.map((item) => ({
